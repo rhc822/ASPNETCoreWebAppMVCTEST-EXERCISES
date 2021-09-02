@@ -53,7 +53,7 @@ namespace CreditCard.Tests.Model
         [Theory]
         [InlineData(ExpectedLowIncomeThreshold)]
         [InlineData(ExpectedLowIncomeThreshold + 1)]
-        [InlineData(ExpectedLowIncomeThreshold - 1)]
+        [InlineData(ExpectedHighIncomeThreshold - 1)]
 
         public void ReferNonYoungApplicantsWhoAreMiddleIncome(int income)
         {
