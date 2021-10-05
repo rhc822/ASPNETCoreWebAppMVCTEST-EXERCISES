@@ -1,8 +1,7 @@
 ﻿using CreditCards.Core.Model;
-using System;
-using System.Collections.Generic;
-using System.Text;
+using CreditCards.Core.Interfaces;
 using Xunit;
+using Moq;
 
 namespace CreditCard.Tests.Model
 {
@@ -10,6 +9,7 @@ namespace CreditCard.Tests.Model
     {
         private const int ExpectedLowIncomeThreshold = 20_000;
         private const int ExpectedHighIncomeThreshold = 100_000;
+        private const string ValidFrequentFlyerNumber = "012345-A";
 
 
         [Theory]
@@ -18,12 +18,13 @@ namespace CreditCard.Tests.Model
         [InlineData(int.MaxValue)]
         public void AcceptAllHighIncomeApplicants(int income)
         {
-            var sut = new CreditCardApplicationEvaluator();
+            var sut = new CreditCardApplicationEvaluator(new FrequentFlyerNumberValidator());
 
             var application = new CreditCardApplication
             {
                 GrossAnnualIncome = income,
-                Age = 21
+                Age = 21,
+                FrequentFlyerNumber = ValidFrequentFlyerNumber
             };
 
             Assert.Equal(CreditCardApplicationDecision.AutoAccepted, sut.Evaluate(application));
@@ -38,12 +39,13 @@ namespace CreditCard.Tests.Model
 
         public void ReferYoungApplicantsWhoAreNotHighIncome(int age)
         {
-            var sut = new CreditCardApplicationEvaluator();
+            var sut = new CreditCardApplicationEvaluator(new FrequentFlyerNumberValidator());
 
             var application = new CreditCardApplication
             {
                 GrossAnnualIncome = ExpectedHighIncomeThreshold - 1,
-                Age = age
+                Age = age,
+                FrequentFlyerNumber = ValidFrequentFlyerNumber
             };
 
             Assert.Equal(CreditCardApplicationDecision.ReferredToHuman, sut.Evaluate(application));
@@ -57,12 +59,13 @@ namespace CreditCard.Tests.Model
 
         public void ReferNonYoungApplicantsWhoAreMiddleIncome(int income)
         {
-            var sut = new CreditCardApplicationEvaluator();
+            var sut = new CreditCardApplicationEvaluator(new FrequentFlyerNumberValidator());
 
             var application = new CreditCardApplication
             {
                 GrossAnnualIncome = income,
-                Age = 21
+                Age = 21,
+                FrequentFlyerNumber = ValidFrequentFlyerNumber
             };
 
             Assert.Equal(CreditCardApplicationDecision.ReferredToHuman, sut.Evaluate(application));
@@ -75,17 +78,44 @@ namespace CreditCard.Tests.Model
 
         public void DeclineAllApplicantsWhoAreLowIncome(int income)
         {
-            var sut = new CreditCardApplicationEvaluator();
+            var sut = new CreditCardApplicationEvaluator(new FrequentFlyerNumberValidator());
 
             var application = new CreditCardApplication
             {
                 GrossAnnualIncome = income,
-                Age = 21
+                Age = 21,
+                FrequentFlyerNumber = ValidFrequentFlyerNumber
             };
 
             Assert.Equal(CreditCardApplicationDecision.AutoDeclined, sut.Evaluate(application));
         }
 
+        [Fact]
+        public void ReferInvalidFrequentFlyerNumbers_RealValidator()
+        {
+            var sut = new CreditCardApplicationEvaluator(new FrequentFlyerNumberValidator());
+
+            var application = new CreditCardApplication
+            {
+                FrequentFlyerNumber = "0dm389dn29"
+            };
+
+            Assert.Equal(CreditCardApplicationDecision.ReferredToHuman, sut.Evaluate(application));
+        }
+
+
+        [Fact]
+        public void ReferInvalidFrequentFlyerNumbers_MockValidator()
+        {
+            var mockValidator = new Mock<IFrequentFlyerNumberValidator>();
+            mockValidator.Setup(x => x.IsValid(It.IsAny<string>())).Returns(false);
+
+            var sut = new CreditCardApplicationEvaluator(mockValidator.Object);
+
+            var application = new CreditCardApplication();
+
+            Assert.Equal(CreditCardApplicationDecision.ReferredToHuman, sut.Evaluate(application));
+        }
 
     }
 }
