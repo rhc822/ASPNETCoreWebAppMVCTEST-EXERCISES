@@ -57,5 +57,23 @@ namespace CreditCard.Tests.Model
 
             Assert.False(sut.IsValid(number));
         }
+
+        [Theory]
+        [InlineData("        ")]
+        [InlineData("")]
+        public void RejectEmptyFrequentFlyerNumber(string number)
+        {
+            var sut = new FrequentFlyerNumberValidator();
+
+            Assert.False(sut.IsValid(number));
+        }
+
+        [Fact]
+        public void ThrowExceptionWhenNullFrequentFlyerNumber()
+        {
+            var sut = new FrequentFlyerNumberValidator();
+
+            Assert.Throws<ArgumentNullException>(() => sut.IsValid(null));
+        }
     }
 }
